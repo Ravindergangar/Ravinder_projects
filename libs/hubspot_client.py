@@ -60,13 +60,15 @@ class HubSpotClient:
             # HubSpot Search API expects datetime filters as epoch millis (string)
             # Convert ISO8601 to milliseconds since epoch
             try:
-                import datetime as _dt
                 import dateutil.parser as _parser
                 dt = _parser.isoparse(last_modified_gte_iso)
-                epoch_ms = int(dt.timestamp() * 1000)
-                lm_value = str(epoch_ms)
+                lm_value = int(dt.timestamp() * 1000)  # numeric epoch millis
             except Exception:
-                lm_value = last_modified_gte_iso
+                # Fallback: if already numeric string, try to cast; else pass-through
+                try:
+                    lm_value = int(last_modified_gte_iso)  # type: ignore[arg-type]
+                except Exception:
+                    lm_value = last_modified_gte_iso
             filter_groups = [
                 {
                     "filters": [
@@ -83,12 +85,7 @@ class HubSpotClient:
             body: Dict = {
                 "properties": properties,
                 "limit": page_size,
-                "sorts": [
-                    {
-                        "propertyName": "hs_lastmodifieddate",
-                        "direction": "ASCENDING",
-                    }
-                ],
+                # omit sorts to avoid enum validation issues; ordering not required for max calc
             }
             if filter_groups:
                 body["filterGroups"] = filter_groups
