@@ -1,3 +1,13 @@
+# Ensure repo root is on sys.path and CONFIG_DIR is set
+import sys, os
+try:
+    nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+    repo_root = "/Workspace/" + nb_path.split("/notebooks/")[0]
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    os.environ.setdefault("CONFIG_DIR", repo_root + "/configs")
+except Exception:
+    pass
 # Databricks notebook source
 # MAGIC %pip install pyyaml requests msal tenacity python-dateutil
 
