@@ -1,0 +1,45 @@
+databases:
+  bronze: bronze
+  silver: silver
+  gold: gold
+  meta: meta
+
+hubspot:
+  base_url: https://api.hubapi.com
+  contacts_endpoint: /crm/v3/objects/contacts/search
+  batch_update_endpoint: /crm/v3/objects/contacts/batch/update
+  properties:
+    - email
+    - firstname
+    - lastname
+    - phone
+    - mobilephone
+    - jobtitle
+    - company
+    - lifecyclestage
+    - hs_object_id
+    - hs_lastmodifieddate
+  rate_limit_per_second: 8
+
+dynamics:
+  api_version: v9.2
+  resource: https://{org_uri}/
+  base: https://{org_uri}/api/data/v9.2
+  contacts_entity: contacts
+  select:
+    - contactid
+    - emailaddress1
+    - firstname
+    - lastname
+    - telephone1
+    - mobilephone
+    - jobtitle
+    - company
+    - modifiedon
+  rate_limit_per_second: 6
+
+watermarks:
+  contacts:
+    hubspot_column: hs_lastmodifieddate
+    dynamics_column: modifiedon
+    default_start: 2000-01-01T00:00:00Z

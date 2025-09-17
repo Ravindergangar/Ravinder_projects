@@ -1,0 +1,7 @@
+requests>=2.31.0
+msal>=1.30.0
+pyyaml>=6.0.2
+python-dateutil>=2.9.0
+databricks-cli>=0.18.0
+tenacity>=9.0.0
+typing-extensions>=4.12.2

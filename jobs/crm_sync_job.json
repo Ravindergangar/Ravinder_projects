@@ -1,0 +1,68 @@
+{
+  "name": "CRM Sync: HubSpot  Dynamics",
+  "tasks": [
+    {
+      "task_key": "setup",
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/00_setup.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "ingest_hubspot",
+      "depends_on": [{"task_key": "setup"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/01_ingest_hubspot_bronze.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "ingest_dynamics",
+      "depends_on": [{"task_key": "setup"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/02_ingest_dynamics_bronze.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "silver_unify",
+      "depends_on": [
+        {"task_key": "ingest_hubspot"},
+        {"task_key": "ingest_dynamics"}
+      ],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/10_silver_unify_contacts.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "scd2_contacts",
+      "depends_on": [{"task_key": "silver_unify"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/20_scd2_contacts.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "compute_deltas",
+      "depends_on": [{"task_key": "scd2_contacts"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/30_compute_deltas.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "push_hubspot",
+      "depends_on": [{"task_key": "compute_deltas"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/40_push_hubspot.py"},
+      "job_cluster_key": "main_cluster"
+    },
+    {
+      "task_key": "push_dynamics",
+      "depends_on": [{"task_key": "compute_deltas"}],
+      "notebook_task": {"notebook_path": "/Repos/REPLACE/WORKSPACE/notebooks/41_push_dynamics.py"},
+      "job_cluster_key": "main_cluster"
+    }
+  ],
+  "job_clusters": [
+    {
+      "job_cluster_key": "main_cluster",
+      "new_cluster": {
+        "spark_version": "13.3.x-scala2.12",
+        "node_type_id": "i3.xlarge",
+        "num_workers": 1,
+        "spark_conf": {"spark.databricks.cluster.profile": "singleNode"},
+        "custom_tags": {"Project": "crm-sync"}
+      }
+    }
+  ]
+}
+
