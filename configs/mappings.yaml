@@ -1,0 +1,39 @@
+objects:
+  contacts:
+    business_key: ["email"]
+    watermark_field_hubspot: updatedAt
+    watermark_field_d365: modifiedon
+    fields:
+      - source_field: email
+        target_field: emailaddress1
+        direction: bidirectional
+        merge_policy: overwrite
+      - source_field: firstname
+        target_field: firstname
+        direction: bidirectional
+        merge_policy: fill_if_missing
+      - source_field: lastname
+        target_field: lastname
+        direction: bidirectional
+        merge_policy: fill_if_missing
+      - source_field: phone
+        target_field: telephone1
+        direction: bidirectional
+        merge_policy: overwrite
+      - source_field: lifecyclestage
+        target_field: new_lifecycle
+        direction: hubspot_to_d365
+        merge_policy: overwrite
+  companies:
+    business_key: ["domain"]
+    watermark_field_hubspot: updatedAt
+    watermark_field_d365: modifiedon
+    fields:
+      - source_field: name
+        target_field: name
+        direction: bidirectional
+        merge_policy: overwrite
+      - source_field: domain
+        target_field: websiteurl
+        direction: bidirectional
+        merge_policy: fill_if_missing

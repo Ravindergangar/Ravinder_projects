@@ -1,0 +1,12 @@
+database: crm_sync
+bronze_schema: bronze
+silver_schema: silver
+gold_schema: gold
+audit_schema: audit
+
+hubspot_base_url: https://api.hubapi.com
+d365_resource_url: https://yourorg.crm.dynamics.com
+
+objects:
+  - contacts
+  - companies
