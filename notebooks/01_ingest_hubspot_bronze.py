@@ -50,6 +50,7 @@ client = HubSpotClient(HUBSPOT_TOKEN, base_url=cfg["sources"]["hubspot"]["base_u
 wm = get_watermark(spark, meta_db, entity="contacts", source="hubspot", default_iso=wm_default)
 wm_iso = wm.isoformat().replace("+00:00", "Z")
 
+# HubSpot filter uses epoch millis in our client; pass ISO and client will convert
 records, max_lastmod = client.search_contacts(properties=h_props, last_modified_gte_iso=wm_iso)
 
 load_ts = datetime.utcnow()

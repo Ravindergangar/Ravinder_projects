@@ -57,13 +57,23 @@ class HubSpotClient:
 
         filter_groups: List[Dict] = []
         if last_modified_gte_iso:
+            # HubSpot Search API expects datetime filters as epoch millis (string)
+            # Convert ISO8601 to milliseconds since epoch
+            try:
+                import datetime as _dt
+                import dateutil.parser as _parser
+                dt = _parser.isoparse(last_modified_gte_iso)
+                epoch_ms = int(dt.timestamp() * 1000)
+                lm_value = str(epoch_ms)
+            except Exception:
+                lm_value = last_modified_gte_iso
             filter_groups = [
                 {
                     "filters": [
                         {
                             "propertyName": "hs_lastmodifieddate",
                             "operator": "GTE",
-                            "value": last_modified_gte_iso,
+                            "value": lm_value,
                         }
                     ]
                 }
@@ -76,7 +86,7 @@ class HubSpotClient:
                 "sorts": [
                     {
                         "propertyName": "hs_lastmodifieddate",
-                        "direction": "ASC",
+                        "direction": "ASCENDING",
                     }
                 ],
             }
