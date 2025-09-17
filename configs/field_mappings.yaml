@@ -1,0 +1,40 @@
+contacts:
+  key:
+    unified_key: email
+    fallback_uuid: true
+  fields:
+    - unified: email
+      hubspot: email
+      dynamics: emailaddress1
+      direction: bi
+      strategy: overwrite
+    - unified: firstname
+      hubspot: firstname
+      dynamics: firstname
+      direction: bi
+      strategy: fill_if_missing
+    - unified: lastname
+      hubspot: lastname
+      dynamics: lastname
+      direction: bi
+      strategy: fill_if_missing
+    - unified: phone
+      hubspot: phone
+      dynamics: telephone1
+      direction: bi
+      strategy: overwrite
+    - unified: mobilephone
+      hubspot: mobilephone
+      dynamics: mobilephone
+      direction: bi
+      strategy: fill_if_missing
+    - unified: jobtitle
+      hubspot: jobtitle
+      dynamics: jobtitle
+      direction: to_hubspot
+      strategy: overwrite
+    - unified: company
+      hubspot: company
+      dynamics: company
+      direction: to_dynamics
+      strategy: fill_if_missing
