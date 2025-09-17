@@ -36,10 +36,15 @@ def get_watermark(
     source: str,
     default_iso: str,
 ) -> datetime:
-    df = spark.table(f"{meta_db}.watermarks").where((F.col("entity") == entity) & (F.col("source") == source))
+    df = (
+        spark.table(f"{meta_db}.watermarks")
+        .where((F.col("entity") == entity) & (F.col("source") == source))
+        .select("watermark_ts", "updated_at")
+    )
     row = df.orderBy(F.col("updated_at").desc()).limit(1).collect()
     if row:
-        return row[0]["watermark_ts"]
+        # Access by positional index to avoid runtime issues with name-based indexing
+        return row[0][0]
     return datetime.fromisoformat(default_iso.replace("Z", "+00:00"))
 
 
