@@ -68,6 +68,22 @@ Install once per cluster (or in your repo job task):
 ### Job configuration
 Use `jobs/crm_sync_job.json` as a starting point. Update the cluster version, node type, and notebook paths to match your workspace path.
 
+### Runbook (Databricks)
+1) Create a Repo and add this project (or upload under Workspace)
+2) Open `notebooks/00_setup.py` and run all cells (creates DBs/tables)
+3) Configure secrets:
+   - Create a secret scope or set env vars on the job/cluster:
+     - `HUBSPOT_TOKEN`
+     - `D365_TENANT_ID`, `D365_CLIENT_ID`, `D365_CLIENT_SECRET`, `D365_ORG_URI`
+4) Run `01_ingest_hubspot_bronze.py` and `02_ingest_dynamics_bronze.py`
+5) Run `10_silver_unify_contacts.py` then `20_scd2_contacts.py`
+6) Run `30_compute_deltas.py` to stage outbox payloads
+7) Run `40_push_hubspot.py` and `41_push_dynamics.py` to push changes
+
+Notes on Dynamics OptionSets/Lookups:
+- Configure OptionSets and Lookups in `configs/sources.yaml` under `dynamics.option_sets` and `dynamics.lookups`.
+- The Dynamics push notebook translates display values to backend numeric codes or OData binds automatically.
+
 ### Data model details
 - Bronze tables store raw payloads plus selected flattened columns and timestamps
 - Silver snapshots select the latest row per source ID using `updated_at`

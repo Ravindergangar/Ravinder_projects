@@ -26,6 +26,12 @@ dynamics:
   resource: https://{org_uri}/
   base: https://{org_uri}/api/data/v9.2
   contacts_entity: contacts
+  # OptionSet/Lookup mapping: specify fields that require translation
+  # Example: statecode/statuscode or custom fields
+  option_sets:
+    # example_option: GlobalOptionSetName
+  lookups:
+    # account lookup example: parentcustomerid -> accounts
   select:
     - contactid
     - emailaddress1
