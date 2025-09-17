@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+dbfs/
+checkpoint/
+_checkpoint/
+spark-warehouse/
+logs/
