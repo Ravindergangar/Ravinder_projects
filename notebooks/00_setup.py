@@ -39,6 +39,7 @@ ensure_audit_tables(spark, meta_db)
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {bronze_db}.hubspot_contacts_raw (
   load_ts TIMESTAMP,
+  load_date DATE,
   hs_object_id STRING,
   hs_lastmodifieddate TIMESTAMP,
   email STRING,
@@ -51,12 +52,13 @@ CREATE TABLE IF NOT EXISTS {bronze_db}.hubspot_contacts_raw (
   lifecyclestage STRING,
   raw STRING
 ) USING DELTA
-PARTITIONED BY (date(load_ts))
+PARTITIONED BY (load_date)
 """)
 
 spark.sql(f"""
 CREATE TABLE IF NOT EXISTS {bronze_db}.dynamics_contacts_raw (
   load_ts TIMESTAMP,
+  load_date DATE,
   contactid STRING,
   modifiedon TIMESTAMP,
   emailaddress1 STRING,
@@ -68,7 +70,7 @@ CREATE TABLE IF NOT EXISTS {bronze_db}.dynamics_contacts_raw (
   company STRING,
   raw STRING
 ) USING DELTA
-PARTITIONED BY (date(load_ts))
+PARTITIONED BY (load_date)
 """)
 
 # COMMAND ----------

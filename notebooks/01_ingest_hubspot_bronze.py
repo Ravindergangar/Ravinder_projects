@@ -54,6 +54,7 @@ for r in records:
     rows.append(
         (
             load_ts,
+            load_ts.date(),
             r.get("id"),
             props.get("hs_lastmodifieddate"),
             props.get("email"),
@@ -68,7 +69,7 @@ for r in records:
         )
     )
 
-schema = "load_ts timestamp, hs_object_id string, hs_lastmodifieddate timestamp, email string, firstname string, lastname string, phone string, mobilephone string, jobtitle string, company string, lifecyclestage string, raw string"
+schema = "load_ts timestamp, load_date date, hs_object_id string, hs_lastmodifieddate timestamp, email string, firstname string, lastname string, phone string, mobilephone string, jobtitle string, company string, lifecyclestage string, raw string"
 df = spark.createDataFrame(rows, schema=schema) if rows else spark.createDataFrame([], schema=schema)
 
 if df.count() > 0:
