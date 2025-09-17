@@ -1,3 +1,9 @@
+# Optional: auto-pick scope via env var
+import os
+SCOPE = os.environ.get("SECRET_SCOPE")
+from libs.config import get_secret
+if SCOPE:
+    HUBSPOT_TOKEN = get_secret("HUBSPOT_TOKEN", scope=SCOPE) or HUBSPOT_TOKEN
 # Ensure repo root is on sys.path and CONFIG_DIR is set
 import sys, os
 try:

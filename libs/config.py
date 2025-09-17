@@ -96,23 +96,36 @@ def load_yaml_config(config_dir: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
+def _get_dbutils():
+    """Best-effort access to dbutils in Databricks (notebooks or jobs)."""
+    try:  # notebook global
+        return dbutils  # type: ignore  # noqa: F821
+    except Exception:
+        try:
+            from pyspark.dbutils import DBUtils  # type: ignore
+            from pyspark.sql import SparkSession
+            spark = SparkSession.getActiveSession()
+            if spark is not None:
+                return DBUtils(spark)
+        except Exception:
+            return None
+
+
 def get_secret(name: str, default: Optional[str] = None, scope: Optional[str] = None) -> Optional[str]:
     """Retrieve a secret from Databricks secret scope if available, otherwise env.
 
-    - If scope provided, tries dbutils.secrets.get(scope, name)
-    - Else tries env var with same name
+    Resolution order:
+    - If scope provided and dbutils available: return dbutils.secrets.get(scope, name)
+    - Else: return environment variable NAME if set
+    - Else: return default
     """
-    try:
-        # Only available in Databricks
-        from pyspark.dbutils import DBUtils  # type: ignore
-        try:
-            dbutils = DBUtils(getspark())  # type: ignore # noqa: F821
-            if scope:
-                return dbutils.secrets.get(scope=scope, key=name)  # type: ignore
-        except Exception:
-            pass
-    except Exception:
-        pass
+    if scope:
+        dbu = _get_dbutils()
+        if dbu is not None:
+            try:
+                return dbu.secrets.get(scope=scope, key=name)  # type: ignore[attr-defined]
+            except Exception:
+                pass
     return os.environ.get(name, default)
 
 

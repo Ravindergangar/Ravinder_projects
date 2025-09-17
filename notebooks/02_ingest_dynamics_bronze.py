@@ -1,3 +1,12 @@
+# Optional: auto-pick scope via env var
+import os
+SCOPE = os.environ.get("SECRET_SCOPE")
+from libs.config import get_secret
+if SCOPE:
+    TENANT = get_secret("D365_TENANT_ID", scope=SCOPE) or TENANT
+    CLIENT_ID = get_secret("D365_CLIENT_ID", scope=SCOPE) or CLIENT_ID
+    CLIENT_SECRET = get_secret("D365_CLIENT_SECRET", scope=SCOPE) or CLIENT_SECRET
+    ORG_URI = get_secret("D365_ORG_URI", scope=SCOPE) or ORG_URI
 # Ensure repo root is on sys.path and CONFIG_DIR is set
 import sys, os
 try:
