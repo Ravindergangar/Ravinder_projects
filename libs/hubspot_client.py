@@ -2,6 +2,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import time
 
 import requests
+from requests import exceptions as RE
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
@@ -19,6 +20,8 @@ class HubSpotClient:
                 "Content-Type": "application/json",
             }
         )
+        # Default timeouts: (connect, read)
+        self._timeout = (10, 120)
 
     @retry(
         reraise=True,
@@ -28,7 +31,11 @@ class HubSpotClient:
     )
     def _post(self, path: str, json_body: Dict) -> Dict:
         url = f"{self.base_url}{path}"
-        resp = self.session.post(url, json=json_body, timeout=60)
+        try:
+            resp = self.session.post(url, json=json_body, timeout=self._timeout)
+        except (RE.ReadTimeout, RE.ConnectTimeout, RE.Timeout, RE.ConnectionError) as e:
+            # Wrap network/timeout errors for retry
+            raise HubSpotError(f"Request error: {e}")
         if resp.status_code in (429, 500, 502, 503, 504):
             # Respect rate limit if present
             retry_after = int(resp.headers.get("Retry-After", "0"))
