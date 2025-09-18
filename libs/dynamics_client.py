@@ -24,13 +24,13 @@ class DynamicsClient:
     ) -> None:
         self.org_uri = org_uri
         self.base_url = f"https://{org_uri}/api/data/{api_version}"
+        self._tenant_id = tenant_id
+        self._client_id = client_id
+        self._client_secret = client_secret
         self._token_override = access_token
         self._token_provider = token_provider
-        self.app = ConfidentialClientApplication(
-            client_id=client_id,
-            client_credential=client_secret,
-            authority=f"https://login.microsoftonline.com/{tenant_id}",
-        )
+        # Lazy-init MSAL only if needed (avoids authority errors when using direct token)
+        self.app: Optional[ConfidentialClientApplication] = None
         self.session = requests.Session()
 
     def _token(self) -> str:
@@ -38,6 +38,13 @@ class DynamicsClient:
             return self._token_override
         if self._token_provider:
             return self._token_provider()
+        # Ensure MSAL app exists
+        if self.app is None:
+            self.app = ConfidentialClientApplication(
+                client_id=self._client_id,
+                client_credential=self._client_secret,
+                authority=f"https://login.microsoftonline.com/{self._tenant_id}",
+            )
         scope = [f"https://{self.org_uri}/.default"]
         res = self.app.acquire_token_silent(scopes=scope, account=None)
         if not res:
