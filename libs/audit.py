@@ -79,17 +79,24 @@ def log_audit(
             "message",
             "payload",
         ],
-    ).withColumn("ts", F.current_timestamp())
+    )
+    # Enforce target types
+    df = (
+        df.withColumn("http_code", F.col("http_code").cast("int"))
+          .withColumn("message", F.col("message").cast("string"))
+          .withColumn("payload", F.col("payload").cast("string"))
+          .withColumn("ts", F.current_timestamp())
+    )
     df = df.select(
-        "ts",
-        "system",
-        "entity",
-        "operation",
-        "request_id",
-        "status",
-        "http_code",
-        "message",
-        "payload",
+        F.col("ts").cast("timestamp").alias("ts"),
+        F.col("system").cast("string").alias("system"),
+        F.col("entity").cast("string").alias("entity"),
+        F.col("operation").cast("string").alias("operation"),
+        F.col("request_id").cast("string").alias("request_id"),
+        F.col("status").cast("string").alias("status"),
+        F.col("http_code").cast("int").alias("http_code"),
+        F.col("message").cast("string").alias("message"),
+        F.col("payload").cast("string").alias("payload"),
     )
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.audit_log")
 
