@@ -54,8 +54,8 @@ client = DynamicsClient(
 
 # COMMAND ----------
 
-# Load pending payloads (small batch)
-ob = spark.table(f"{gold_db}.dynamics_outbox_contacts").where(F.col("status") == "PENDING").limit(90)
+# Load up to 5 pending payloads for debug
+ob = spark.table(f"{gold_db}.dynamics_outbox_contacts").where(F.col("status") == "PENDING").limit(5)
 rows = ob.collect()
 
 for r in rows:

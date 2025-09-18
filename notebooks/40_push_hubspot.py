@@ -36,8 +36,8 @@ client = HubSpotClient(HUBSPOT_TOKEN, base_url=cfg["sources"]["hubspot"]["base_u
 
 # COMMAND ----------
 
-# Load pending outbox (batch up to 90 to be safe)
-ob = spark.table(f"{gold_db}.hubspot_outbox_contacts").where(F.col("status") == "PENDING").limit(90)
+# Load up to 5 pending outbox rows for debug
+ob = spark.table(f"{gold_db}.hubspot_outbox_contacts").where(F.col("status") == "PENDING").limit(5)
 rows = ob.collect()
 
 if rows:
