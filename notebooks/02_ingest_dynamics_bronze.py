@@ -22,7 +22,7 @@ except Exception:
 
 # COMMAND ----------
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from pyspark.sql import SparkSession
@@ -65,8 +65,9 @@ wm_iso = wm.isoformat().replace("+00:00", "Z")
 
 records, max_modified = client.list_contacts(select=d_select, modifiedon_gte_iso=wm_iso)
 
-load_ts = datetime.utcnow()
+load_ts = datetime.now(timezone.utc)
 
+# Build rows with modifiedon as string; cast in Spark
 rows = []
 for r in records:
     rows.append(
@@ -74,7 +75,7 @@ for r in records:
             load_ts,
             load_ts.date(),
             r.get("contactid"),
-            r.get("modifiedon"),
+            r.get("modifiedon"),  # string
             r.get("emailaddress1"),
             r.get("firstname"),
             r.get("lastname"),
@@ -86,8 +87,11 @@ for r in records:
         )
     )
 
-schema = "load_ts timestamp, load_date date, contactid string, modifiedon timestamp, emailaddress1 string, firstname string, lastname string, telephone1 string, mobilephone string, jobtitle string, company string, raw string"
+schema = "load_ts timestamp, load_date date, contactid string, modifiedon string, emailaddress1 string, firstname string, lastname string, telephone1 string, mobilephone string, jobtitle string, company string, raw string"
 df = spark.createDataFrame(rows, schema=schema) if rows else spark.createDataFrame([], schema=schema)
+# Cast modifiedon to timestamp with to_timestamp
+if df.columns:
+    df = df.withColumn("modifiedon", F.to_timestamp(F.col("modifiedon")))
 
 if df.count() > 0:
     df.write.format("delta").mode("append").saveAsTable(f"{bronze_db}.dynamics_contacts_raw")
