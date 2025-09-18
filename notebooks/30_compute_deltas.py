@@ -15,10 +15,10 @@ except Exception:
 from pyspark.sql import functions as F
 
 def array_of_kv_to_map(col):
-    # col is array<struct<field:string,value:...>> -> map<string, string>
+    # col is array<struct<field:string,value:...>> -> map<string, any>
     return F.map_from_arrays(
-        F.transform(col, lambda x: F.col("x.field")),
-        F.transform(col, lambda x: F.col("x.value"))
+        F.transform(col, lambda e: e.getField("field")),
+        F.transform(col, lambda e: e.getField("value"))
     )
 # Databricks notebook source
 # MAGIC %pip install pyyaml requests msal tenacity python-dateutil
