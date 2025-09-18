@@ -13,7 +13,15 @@ def upsert_delta(
 ) -> None:
     from delta.tables import DeltaTable
 
-    if spark._jsparkSession.catalog().tableExists(full_table_name):  # type: ignore
+    def table_exists(identifier: str) -> bool:
+        try:
+            # Use SQL to avoid direct JVM attribute access (shared clusters)
+            spark.sql(f"DESCRIBE TABLE {identifier}")
+            return True
+        except Exception:
+            return False
+
+    if table_exists(full_table_name):
         target = DeltaTable.forName(spark, full_table_name)
         cond = " AND ".join([f"target.{k} = source.{k}" for k in merge_keys])
         (
