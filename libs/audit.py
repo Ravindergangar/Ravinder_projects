@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 
 def ensure_audit_tables(spark: SparkSession, meta_db: str) -> None:
@@ -67,19 +68,17 @@ def log_audit(
             payload_str,
         )
     ]
-    df = spark.createDataFrame(
-        data,
-        [
-            "system",
-            "entity",
-            "operation",
-            "request_id",
-            "status",
-            "http_code",
-            "message",
-            "payload",
-        ],
-    )
+    schema = StructType([
+        StructField("system", StringType(), True),
+        StructField("entity", StringType(), True),
+        StructField("operation", StringType(), True),
+        StructField("request_id", StringType(), True),
+        StructField("status", StringType(), True),
+        StructField("http_code", IntegerType(), True),
+        StructField("message", StringType(), True),
+        StructField("payload", StringType(), True),
+    ])
+    df = spark.createDataFrame(data, schema=schema)
     # Enforce target types
     df = (
         df.withColumn("http_code", F.col("http_code").cast("int"))
@@ -116,10 +115,14 @@ def log_dead_letter(
 
         payload_str = json.dumps(payload, ensure_ascii=False)
     data = [(system, entity, key, reason, payload_str)]
-    df = spark.createDataFrame(
-        data,
-        ["system", "entity", "key", "reason", "payload"],
-    ).withColumn("ts", F.current_timestamp())
+    schema = StructType([
+        StructField("system", StringType(), True),
+        StructField("entity", StringType(), True),
+        StructField("key", StringType(), True),
+        StructField("reason", StringType(), True),
+        StructField("payload", StringType(), True),
+    ])
+    df = spark.createDataFrame(data, schema=schema).withColumn("ts", F.current_timestamp())
     df = df.select("ts", "system", "entity", "key", "reason", "payload")
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.dead_letter")
 
