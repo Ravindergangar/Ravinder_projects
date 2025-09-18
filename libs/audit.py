@@ -10,6 +10,7 @@ from pyspark.sql.types import (
     StringType,
     IntegerType,
 )
+from pyspark.sql import Row
 
 
 def ensure_audit_tables(spark: SparkSession, meta_db: str) -> None:
@@ -63,34 +64,27 @@ def log_audit(
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
-    schema = StructType(
-        [
-            StructField("ts", TimestampType(), True),
-            StructField("system", StringType(), True),
-            StructField("entity", StringType(), True),
-            StructField("operation", StringType(), True),
-            StructField("request_id", StringType(), True),
-            StructField("status", StringType(), True),
-            StructField("http_code", IntegerType(), True),
-            StructField("message", StringType(), True),
-            StructField("payload", StringType(), True),
-        ]
+    row = Row(
+        ts=now,
+        system=system,
+        entity=entity,
+        operation=operation,
+        request_id=request_id,
+        status=status,
+        http_code=(int(http_code) if http_code is not None else None),
+        message=message,
+        payload=payload_str,
     )
-    df = spark.createDataFrame(
-        [
-            (
-                now,
-                system,
-                entity,
-                operation,
-                request_id,
-                status,
-                int(http_code) if http_code is not None else None,
-                message,
-                payload_str,
-            )
-        ],
-        schema=schema,
+    df = spark.createDataFrame([row]).selectExpr(
+        "cast(ts as timestamp) as ts",
+        "cast(system as string) as system",
+        "cast(entity as string) as entity",
+        "cast(operation as string) as operation",
+        "cast(request_id as string) as request_id",
+        "cast(status as string) as status",
+        "cast(http_code as int) as http_code",
+        "cast(message as string) as message",
+        "cast(payload as string) as payload",
     )
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.audit_log")
 
@@ -110,16 +104,21 @@ def log_dead_letter(
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
-    schema = StructType(
-        [
-            StructField("ts", TimestampType(), True),
-            StructField("system", StringType(), True),
-            StructField("entity", StringType(), True),
-            StructField("key", StringType(), True),
-            StructField("reason", StringType(), True),
-            StructField("payload", StringType(), True),
-        ]
+    row = Row(
+        ts=now,
+        system=system,
+        entity=entity,
+        key=key,
+        reason=reason,
+        payload=payload_str,
     )
-    df = spark.createDataFrame([(now, system, entity, key, reason, payload_str)], schema=schema)
+    df = spark.createDataFrame([row]).selectExpr(
+        "cast(ts as timestamp) as ts",
+        "cast(system as string) as system",
+        "cast(entity as string) as entity",
+        "cast(key as string) as key",
+        "cast(reason as string) as reason",
+        "cast(payload as string) as payload",
+    )
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.dead_letter")
 
