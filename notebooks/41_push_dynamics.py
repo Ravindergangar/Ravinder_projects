@@ -22,7 +22,7 @@ cfg_full = cfg
 # COMMAND ----------
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -74,6 +74,6 @@ for r in rows:
         SET status = 'SUCCESS', last_attempt_ts = current_timestamp(), attempt = attempt + 1
         WHERE unified_contact_id = '{r['unified_contact_id']}'
         """)
-        log_audit(spark, meta_db, "dynamics", "contacts", "push", request_id=f"push-{int(datetime.utcnow().timestamp())}", status="SUCCESS", http_code=200, message=f"Patched {r['contactid']}")
+        log_audit(spark, meta_db, "dynamics", "contacts", "push", request_id=f"push-{int(datetime.now(timezone.utc).timestamp())}", status="SUCCESS", http_code=200, message=f"Patched {r['contactid']}")
     except DynamicsError as e:
         log_audit(spark, meta_db, "dynamics", "contacts", "push", request_id=f"push-{int(datetime.utcnow().timestamp())}", status="FAILED", http_code=500, message=str(e), payload=payload)

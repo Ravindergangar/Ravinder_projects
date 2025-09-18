@@ -14,7 +14,7 @@ except Exception:
 # COMMAND ----------
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -62,7 +62,7 @@ if rows:
             SET status = 'SUCCESS', last_attempt_ts = current_timestamp(), attempt = attempt + 1
             WHERE unified_contact_id = '{uid}'
             """)
-        log_audit(spark, meta_db, "hubspot", "contacts", "push", request_id=f"push-{int(datetime.utcnow().timestamp())}", status="SUCCESS", http_code=200, message=f"Pushed {len(inputs)} records")
+        log_audit(spark, meta_db, "hubspot", "contacts", "push", request_id=f"push-{int(datetime.now(timezone.utc).timestamp())}", status="SUCCESS", http_code=200, message=f"Pushed {len(inputs)} records")
     except HubSpotError as e:
         # Record failure but leave as PENDING for retry, log audit and dead-letter if needed
         log_audit(spark, meta_db, "hubspot", "contacts", "push", request_id=f"push-{int(datetime.utcnow().timestamp())}", status="FAILED", http_code=500, message=str(e))
