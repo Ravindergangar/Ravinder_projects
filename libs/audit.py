@@ -3,14 +3,6 @@ from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import (
-    StructType,
-    StructField,
-    TimestampType,
-    StringType,
-    IntegerType,
-)
-from pyspark.sql import Row
 
 
 def ensure_audit_tables(spark: SparkSession, meta_db: str) -> None:
@@ -58,33 +50,46 @@ def log_audit(
     message: str,
     payload: Optional[Dict[str, Any]] = None,
 ) -> None:
-    now = datetime.utcnow()
     payload_str = None
     if payload is not None:
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
-    row = Row(
-        ts=now,
-        system=system,
-        entity=entity,
-        operation=operation,
-        request_id=request_id,
-        status=status,
-        http_code=(int(http_code) if http_code is not None else None),
-        message=message,
-        payload=payload_str,
-    )
-    df = spark.createDataFrame([row]).selectExpr(
-        "cast(ts as timestamp) as ts",
-        "cast(system as string) as system",
-        "cast(entity as string) as entity",
-        "cast(operation as string) as operation",
-        "cast(request_id as string) as request_id",
-        "cast(status as string) as status",
-        "cast(http_code as int) as http_code",
-        "cast(message as string) as message",
-        "cast(payload as string) as payload",
+    data = [
+        (
+            system,
+            entity,
+            operation,
+            request_id,
+            status,
+            int(http_code) if http_code is not None else None,
+            message,
+            payload_str,
+        )
+    ]
+    df = spark.createDataFrame(
+        data,
+        [
+            "system",
+            "entity",
+            "operation",
+            "request_id",
+            "status",
+            "http_code",
+            "message",
+            "payload",
+        ],
+    ).withColumn("ts", F.current_timestamp())
+    df = df.select(
+        "ts",
+        "system",
+        "entity",
+        "operation",
+        "request_id",
+        "status",
+        "http_code",
+        "message",
+        "payload",
     )
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.audit_log")
 
@@ -98,27 +103,16 @@ def log_dead_letter(
     reason: str,
     payload: Optional[Dict[str, Any]] = None,
 ) -> None:
-    now = datetime.utcnow()
     payload_str = None
     if payload is not None:
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
-    row = Row(
-        ts=now,
-        system=system,
-        entity=entity,
-        key=key,
-        reason=reason,
-        payload=payload_str,
-    )
-    df = spark.createDataFrame([row]).selectExpr(
-        "cast(ts as timestamp) as ts",
-        "cast(system as string) as system",
-        "cast(entity as string) as entity",
-        "cast(key as string) as key",
-        "cast(reason as string) as reason",
-        "cast(payload as string) as payload",
-    )
+    data = [(system, entity, key, reason, payload_str)]
+    df = spark.createDataFrame(
+        data,
+        ["system", "entity", "key", "reason", "payload"],
+    ).withColumn("ts", F.current_timestamp())
+    df = df.select("ts", "system", "entity", "key", "reason", "payload")
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.dead_letter")
 
