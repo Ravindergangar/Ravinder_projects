@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Callable
 import time
 import urllib.parse
 
@@ -19,9 +19,13 @@ class DynamicsClient:
         client_secret: str,
         org_uri: str,
         api_version: str = "v9.2",
+        access_token: Optional[str] = None,
+        token_provider: Optional[Callable[[], str]] = None,
     ) -> None:
         self.org_uri = org_uri
         self.base_url = f"https://{org_uri}/api/data/{api_version}"
+        self._token_override = access_token
+        self._token_provider = token_provider
         self.app = ConfidentialClientApplication(
             client_id=client_id,
             client_credential=client_secret,
@@ -30,6 +34,10 @@ class DynamicsClient:
         self.session = requests.Session()
 
     def _token(self) -> str:
+        if self._token_override:
+            return self._token_override
+        if self._token_provider:
+            return self._token_provider()
         scope = [f"https://{self.org_uri}/.default"]
         res = self.app.acquire_token_silent(scopes=scope, account=None)
         if not res:
