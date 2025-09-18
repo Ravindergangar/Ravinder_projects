@@ -3,6 +3,13 @@ from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import (
+    StructType,
+    StructField,
+    TimestampType,
+    StringType,
+    IntegerType,
+)
 
 
 def ensure_audit_tables(spark: SparkSession, meta_db: str) -> None:
@@ -56,6 +63,19 @@ def log_audit(
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
+    schema = StructType(
+        [
+            StructField("ts", TimestampType(), True),
+            StructField("system", StringType(), True),
+            StructField("entity", StringType(), True),
+            StructField("operation", StringType(), True),
+            StructField("request_id", StringType(), True),
+            StructField("status", StringType(), True),
+            StructField("http_code", IntegerType(), True),
+            StructField("message", StringType(), True),
+            StructField("payload", StringType(), True),
+        ]
+    )
     df = spark.createDataFrame(
         [
             (
@@ -69,7 +89,8 @@ def log_audit(
                 message,
                 payload_str,
             )
-        ]
+        ],
+        schema=schema,
     )
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.audit_log")
 
@@ -89,6 +110,16 @@ def log_dead_letter(
         import json
 
         payload_str = json.dumps(payload, ensure_ascii=False)
-    df = spark.createDataFrame([(now, system, entity, key, reason, payload_str)])
+    schema = StructType(
+        [
+            StructField("ts", TimestampType(), True),
+            StructField("system", StringType(), True),
+            StructField("entity", StringType(), True),
+            StructField("key", StringType(), True),
+            StructField("reason", StringType(), True),
+            StructField("payload", StringType(), True),
+        ]
+    )
+    df = spark.createDataFrame([(now, system, entity, key, reason, payload_str)], schema=schema)
     df.write.format("delta").mode("append").saveAsTable(f"{meta_db}.dead_letter")
 
