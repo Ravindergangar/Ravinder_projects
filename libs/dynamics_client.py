@@ -101,7 +101,7 @@ class DynamicsClient:
         self,
         select: List[str],
         modifiedon_gte_iso: Optional[str] = None,
-        page_size: int = 500,
+        page_size: int = 5000,
     ) -> Tuple[List[Dict], Optional[str]]:
         """Incrementally list contacts by modifiedon ge watermark.
 
@@ -115,24 +115,31 @@ class DynamicsClient:
         params: Dict[str, str] = {
             "$select": ",".join(select),
             "$orderby": "modifiedon asc",
-            "$top": str(page_size),
         }
         if filter_clause:
             params["$filter"] = filter_clause
 
-        url = f"{self.base_url}{entity}"
         results: List[Dict] = []
         max_mod: Optional[str] = None
         next_link: Optional[str] = None
 
         while True:
             if next_link:
-                resp = self.session.get(next_link, headers=self._headers(), timeout=60)
+                # follow server-provided next link, preserve page size preference
+                headers = self._headers()
+                headers["Prefer"] = f"odata.maxpagesize={page_size}"
+                resp = self.session.get(next_link, headers=headers, timeout=60)
                 if not resp.ok:
                     raise DynamicsError(f"HTTP {resp.status_code}: {resp.text}")
                 data = resp.json()
             else:
-                data = self._get(entity, params)
+                # first page with page size preference; do not use $top to avoid overall cap
+                headers = self._headers()
+                headers["Prefer"] = f"odata.maxpagesize={page_size}"
+                resp = self.session.get(f"{self.base_url}{entity}", headers=headers, params=params, timeout=60)
+                if not resp.ok:
+                    raise DynamicsError(f"HTTP {resp.status_code}: {resp.text}")
+                data = resp.json()
 
             values = data.get("value", [])
             for r in values:
