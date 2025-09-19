@@ -50,8 +50,11 @@ client = HubSpotClient(HUBSPOT_TOKEN, base_url=cfg["sources"]["hubspot"]["base_u
 wm = get_watermark(spark, meta_db, entity="contacts", source="hubspot", default_iso=wm_default)
 wm_iso = wm.isoformat().replace("+00:00", "Z")
 
-# HubSpot filter uses epoch millis in our client; pass ISO and client will convert
+# For initial full load (or if search returns 0), fall back to list endpoint
 records, max_lastmod = client.search_contacts(properties=h_props, last_modified_gte_iso=wm_iso)
+if not records:
+    records, max_lastmod = client.list_contacts_all(properties=h_props, page_size=100)
+
 
 load_ts = datetime.utcnow()
 

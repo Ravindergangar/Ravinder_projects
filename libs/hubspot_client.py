@@ -120,3 +120,43 @@ class HubSpotClient:
         body = {"inputs": inputs}
         return self._post(path, body)
 
+    def list_contacts_all(self, properties: List[str], page_size: int = 100) -> Tuple[List[Dict], Optional[str]]:
+        """List contacts using the objects list endpoint (no server-side datetime filter).
+
+        Paginates with `after` until exhaustion and returns (records, max_lastmodified_iso).
+        """
+        path = "/crm/v3/objects/contacts"
+        results: List[Dict] = []
+        after: Optional[str] = None
+        max_lastmod: Optional[str] = None
+        while True:
+            params = {
+                "limit": str(page_size),
+                "properties": ",".join(properties),
+                "archived": "false",
+            }
+            if after:
+                params["after"] = after
+            url = f"{self.base_url}{path}"
+            try:
+                resp = self.session.get(url, params=params, timeout=self._timeout)
+            except (RE.ReadTimeout, RE.ConnectTimeout, RE.Timeout, RE.ConnectionError) as e:
+                raise HubSpotError(f"Request error: {e}")
+            if not resp.ok:
+                raise HubSpotError(f"HTTP {resp.status_code}: {resp.text}")
+            data = resp.json() if resp.text else {}
+            recs = data.get("results", [])
+            for r in recs:
+                props = r.get("properties", {})
+                # consider either hs_lastmodifieddate or lastmodifieddate
+                lm = props.get("hs_lastmodifieddate") or props.get("lastmodifieddate")
+                if lm and (max_lastmod is None or lm > max_lastmod):
+                    max_lastmod = lm
+            results.extend(recs)
+            paging = data.get("paging", {})
+            next_info = paging.get("next") if paging else None
+            after = next_info.get("after") if next_info else None
+            if not after:
+                break
+        return results, max_lastmod
+
