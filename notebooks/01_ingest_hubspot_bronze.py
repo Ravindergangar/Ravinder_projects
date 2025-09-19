@@ -50,13 +50,15 @@ client = HubSpotClient(HUBSPOT_TOKEN, base_url=cfg["sources"]["hubspot"]["base_u
 wm = get_watermark(spark, meta_db, entity="contacts", source="hubspot", default_iso=wm_default)
 wm_iso = wm.isoformat().replace("+00:00", "Z")
 
-# For initial full load (or if search returns 0), fall back to list endpoint
-records, max_lastmod = client.search_contacts(properties=h_props, last_modified_gte_iso=wm_iso)
-if not records:
+# Full vs incremental: full on default watermark or env override
+full_load = (wm_iso == wm_default) or (os.environ.get("HUBSPOT_FULL_LOAD") == "1")
+if full_load:
     records, max_lastmod = client.list_contacts_all(properties=h_props, page_size=100)
+else:
+    records, max_lastmod = client.search_contacts(properties=h_props, last_modified_gte_iso=wm_iso)
 
-
-load_ts = datetime.utcnow()
+from datetime import timezone
+load_ts = datetime.now(timezone.utc)
 
 rows = []
 for r in records:
